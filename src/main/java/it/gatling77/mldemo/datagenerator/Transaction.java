@@ -31,13 +31,13 @@ public class Transaction {
         return isFraud;
     }
     public String toCSV(){
-        return user+";"+
-                time+";"+
-                amount+";"+
-                latitude+";"+
-                longitude+";"+
-                merchant+";"+
-                presentationMode+";"+
+        return user+","+
+                time+","+
+                amount+","+
+                latitude+","+
+                longitude+","+
+                merchant+","+
+                presentationMode+","+
                 isFraud;
     }
 

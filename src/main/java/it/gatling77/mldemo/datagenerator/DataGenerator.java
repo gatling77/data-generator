@@ -12,9 +12,9 @@ import java.util.stream.Stream;
  */
 public class DataGenerator {
     public static void main(String ... args) throws IOException {
-        int numberOfUsers = 3;
-        int transactionsPerUser = 10;
-        String file = "/home/gatling77/dev/mldemo/datagenerator/target/data.csv";
+        int numberOfUsers = 1000;
+        int transactionsPerUser = 1000;
+        String file = "/home/gatling77/dev/mldemo/dataggregator/src/main/resources/large_dataset.csv";
 
         UserGenerator frequentSmallTransactionsAroundMendrision = new UserGenerator(
                 UserGenerator.aCoupleADayTimeGenerator,

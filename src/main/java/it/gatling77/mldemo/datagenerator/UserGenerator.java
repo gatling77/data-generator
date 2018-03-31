@@ -20,30 +20,30 @@ public class UserGenerator{
 
     static LocalDateTime begin = LocalDateTime.of(2017,1,1,12,0,0);
 
-    public static PositionGenerator aroundMendrisioNarrowPositionGenerator = new PositionGenerator(3000, 45.882372, 8.983121);
-    public static PositionGenerator aroundLuganoNarrowPositionGenerator = new PositionGenerator(3000, 46.013778, 8.9614260);
-    public static PositionGenerator aroundLuganoWidePositionGenerator = new PositionGenerator(10000, 46.013778, 8.9614260);
-    public static PositionGenerator aroundBellinzonaWidePositionGenerator = new PositionGenerator(10000, 46.198628, 9.023575);
+    static PositionGenerator aroundMendrisioNarrowPositionGenerator = new PositionGenerator(3000,7000, 45.882372, 8.983121);
+    static PositionGenerator aroundLuganoNarrowPositionGenerator = new PositionGenerator(2000,6000, 46.013778, 8.9614260);
+    static PositionGenerator aroundLuganoWidePositionGenerator = new PositionGenerator(10000,20000, 46.013778, 8.9614260);
+    static PositionGenerator aroundBellinzonaWidePositionGenerator = new PositionGenerator(10000,15000, 46.198628, 9.023575);
 
-    public static PresentationModeGenerator fewPresentationMode = new PresentationModeGenerator(3);
-    public static PresentationModeGenerator manyPresentationMode = new PresentationModeGenerator(10);
+    static PresentationModeGenerator fewPresentationMode = new PresentationModeGenerator(3);
+    static PresentationModeGenerator manyPresentationMode = new PresentationModeGenerator(10);
 
-    public static MerchantGenerator forAbitueeMerchantGenerator = new MerchantGenerator(10);
-    public static MerchantGenerator casualShopperMerchantGenerator = new MerchantGenerator(100);
+    static MerchantGenerator forAbitueeMerchantGenerator = new MerchantGenerator(10);
+    static MerchantGenerator casualShopperMerchantGenerator = new MerchantGenerator(100);
 
-    public static AmountGenerator smallTransactionsAmountGenerator = new AmountGenerator(10, 3);
-    public static AmountGenerator mediumTransactionsAmountGenerator = new AmountGenerator(50, 10);
-    public static AmountGenerator largeTransactionsAmountGenerator = new AmountGenerator(400, 100);
+    static AmountGenerator smallTransactionsAmountGenerator = new AmountGenerator(10, 50,20);
+    static AmountGenerator mediumTransactionsAmountGenerator = new AmountGenerator(30,100, 225);
+    static AmountGenerator largeTransactionsAmountGenerator = new AmountGenerator(80,200, 75);
 
-    public static TimeGenerator aCoupleADayTimeGenerator= new TimeGenerator(begin, 480, 60);
-    public static TimeGenerator oncePerWeekTimeGenerator= new TimeGenerator(begin, 10080, 1440);
-    public static TimeGenerator twicePerMonthTimeGenerator= new TimeGenerator(begin, 21600, 4320);
+    static TimeGenerator aCoupleADayTimeGenerator= new TimeGenerator(begin, 8000, 15000, 4000);
+    static TimeGenerator oncePerWeekTimeGenerator= new TimeGenerator(begin, 10080,20160, 5000);
+    static TimeGenerator twicePerMonthTimeGenerator= new TimeGenerator(begin, 15600,30000, 10000);
 
-    public UserGenerator(TimeGenerator timeGenerator,
-                         PresentationModeGenerator presentationModeGenerator,
-                         PositionGenerator positionGenerator,
-                         MerchantGenerator merchantGenerator,
-                         AmountGenerator amountGenerator) {
+    public UserGenerator(Generator<LocalDateTime> timeGenerator,
+                         Generator<Integer> presentationModeGenerator,
+                         Generator<Position> positionGenerator,
+                         Generator<String> merchantGenerator,
+                         Generator<Long> amountGenerator) {
         this.timeGenerator = timeGenerator;
         this.presentationModeGenerator = presentationModeGenerator;
         this.positionGenerator = positionGenerator;
@@ -51,16 +51,18 @@ public class UserGenerator{
         this.amountGenerator = amountGenerator;
     }
 
-        TimeGenerator timeGenerator;
-        PresentationModeGenerator presentationModeGenerator;
-        PositionGenerator positionGenerator;
-        MerchantGenerator merchantGenerator;
-        AmountGenerator amountGenerator;
+        Generator<LocalDateTime> timeGenerator;
+        Generator<Integer> presentationModeGenerator;
+        Generator<Position> positionGenerator;
+        Generator<String> merchantGenerator;
+        Generator<Long> amountGenerator;
 
 
         Set<Transaction> generate(long user, int transactionCount){
 
-            return IntStream.range(1,transactionCount+1).parallel().mapToObj(i->{
+            renewGenerators();
+
+            Set<Transaction> transactions = IntStream.range(1,transactionCount+1).parallel().mapToObj(i->{
                 LocalDateTime time = timeGenerator.generate();
                 double amount = amountGenerator.generate();
                 Position position = positionGenerator.generate();
@@ -75,9 +77,16 @@ public class UserGenerator{
                         presentationMode);
             }).collect(Collectors.toSet());
 
-
+            return transactions;
         }
 
+    private void renewGenerators(){
+        timeGenerator=timeGenerator.spawnChild();
+        presentationModeGenerator = presentationModeGenerator.spawnChild();
+        positionGenerator = positionGenerator.spawnChild();
+        merchantGenerator = merchantGenerator.spawnChild();
+        amountGenerator = amountGenerator.spawnChild();
+    }
 
 }
 
@@ -90,6 +99,8 @@ class Generators{
 interface Generator<T>{
 
     T generate();
+
+    Generator<T> spawnChild();
 
 
 }
@@ -112,16 +123,21 @@ class Position{
 
 class PositionGenerator implements Generator<Position>{
     Random _random=new Random();
+    private int minRadius;
+    private int maxRadius;
+    int radius;
+    double lat;
+    double lon;
 
-    public PositionGenerator(int radius, double lat, double lon) {
-        this.radius = radius;
+    public PositionGenerator(int minRadius,int maxRadius, double lat, double lon) {
+        this.minRadius = minRadius;
+        this.maxRadius = maxRadius;
+        this.radius = _random.nextInt(maxRadius-minRadius)+minRadius;
         this.lat = lat;
         this.lon = lon;
     }
 
-    int radius;
-    double lat;
-    double lon;
+
 
     @Override
     public Position generate() {
@@ -143,20 +159,28 @@ class PositionGenerator implements Generator<Position>{
 
         return new Position(foundLatitude,foundLongitude);
     }
+
+    @Override
+    public Generator<Position> spawnChild() {
+        return new PositionGenerator(minRadius,maxRadius,lat,lon);
+    }
 }
 
 class PresentationModeGenerator implements Generator<Integer>{
     private Random _random = new Random();
-
+    private int max;
     public PresentationModeGenerator(int max) {
         this.max=max;
     }
 
-    private int max;
-
     @Override
     public Integer generate() {
         return _random.nextInt(max);
+    }
+
+    @Override
+    public Generator<Integer> spawnChild() {
+        return this;
     }
 }
 
@@ -269,24 +293,33 @@ class MerchantGenerator implements Generator<String>{
     };
 
     public MerchantGenerator(int selectFrom){
-        this.selectFrom = selectFrom;
+        this.selectFrom = Math.min(selectFrom,_merchants.length-1);
     }
 
     @Override
     public String generate() {
         return this._merchants[_random.nextInt(selectFrom)];
     }
+
+    @Override
+    public Generator<String> spawnChild() {
+        return this;
+    }
 }
 
 class AmountGenerator implements Generator<Long>{
 
-    private long average;
-    private long stdDev;
-    private Random _random = new Random();
+    private final long minAverage;
+    private final long maxAverage;
+    private final long average;
+    private final long stdDev;
+    private final Random _random = new Random();
 
-    public AmountGenerator(long average, long stdDev) {
-        this.average = average;
+    public AmountGenerator(long minAverage,long maxAverage, long stdDev) {
+        this.average = _random.nextInt((int)(maxAverage-minAverage))+minAverage;
         this.stdDev = stdDev;
+        this.minAverage = minAverage;
+        this.maxAverage = maxAverage;
     }
 
     @Override
@@ -297,22 +330,33 @@ class AmountGenerator implements Generator<Long>{
         }while(result<0);
         return result;
     }
+
+    @Override
+    public Generator<Long> spawnChild() {
+        return new AmountGenerator(minAverage,maxAverage,stdDev);
+    }
+
+
 }
 
 class TimeGenerator implements Generator<LocalDateTime> {
 
 
-    private LocalDateTime startingPoint;
-    private long offsetInMinutes;
-    private long stdDev;
+    private final long minOffsetInMinutes;
+    private final long maxOffsetInMinutes;
+    private final LocalDateTime startingPoint;
+    private final long offsetInMinutes;
+    private final long stdDev;
 
     private int _count = 0;
-    private Random _random = new Random();
+    private final Random _random = new Random();
 
-    TimeGenerator(LocalDateTime startingPoint, long offsetInMinutes, long stdDev) {
+    TimeGenerator(LocalDateTime startingPoint, long minOffsetInMinutes, long maxOffsetInMinutes, long stdDev) {
         this.startingPoint = startingPoint;
-        this.offsetInMinutes = offsetInMinutes;
+        this.offsetInMinutes = _random.nextInt((int)(maxOffsetInMinutes-minOffsetInMinutes))+minOffsetInMinutes;
         this.stdDev = stdDev;
+        this.minOffsetInMinutes = minOffsetInMinutes;
+        this.maxOffsetInMinutes = maxOffsetInMinutes;
     }
 
     @Override
@@ -321,6 +365,13 @@ class TimeGenerator implements Generator<LocalDateTime> {
         _count++;
         return res;
     }
+
+    @Override
+    public Generator<LocalDateTime> spawnChild() {
+        return new TimeGenerator(startingPoint,minOffsetInMinutes,maxOffsetInMinutes,stdDev);
+    }
+
 }
+
 
 
