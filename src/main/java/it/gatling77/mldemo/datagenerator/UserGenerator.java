@@ -33,7 +33,7 @@ public class UserGenerator{
 
     static AmountGenerator smallTransactionsAmountGenerator = new AmountGenerator(10, 50,20);
     static AmountGenerator mediumTransactionsAmountGenerator = new AmountGenerator(30,100, 225);
-    static AmountGenerator largeTransactionsAmountGenerator = new AmountGenerator(80,200, 75);
+    static AmountGenerator largeTransactionsAmountGenerator = new AmountGenerator(80,500, 75);
 
     static TimeGenerator aCoupleADayTimeGenerator= new TimeGenerator(begin, 8000, 15000, 4000);
     static TimeGenerator oncePerWeekTimeGenerator= new TimeGenerator(begin, 10080,20160, 5000);
@@ -58,9 +58,11 @@ public class UserGenerator{
         Generator<Long> amountGenerator;
 
 
-        Set<Transaction> generate(long user, int transactionCount){
+        User generate(long id, int transactionCount, boolean isFraud){
 
             renewGenerators();
+
+            User user = new User(id,this);
 
             Set<Transaction> transactions = IntStream.range(1,transactionCount+1).parallel().mapToObj(i->{
                 LocalDateTime time = timeGenerator.generate();
@@ -74,10 +76,11 @@ public class UserGenerator{
                         position.latitude,
                         position.longitude,
                         merchant,
-                        presentationMode);
+                        presentationMode,
+                        isFraud);
             }).collect(Collectors.toSet());
-
-            return transactions;
+            user.setTransactions(transactions);
+            return user;
         }
 
     private void renewGenerators(){

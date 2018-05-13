@@ -4,7 +4,7 @@ package it.gatling77.mldemo.datagenerator;
  * Created by gatling77 on 3/17/18.
  */
 public class Transaction {
-    private long user;
+    private User user;
     private long time;
     private double amount;
     private double latitude;
@@ -13,8 +13,8 @@ public class Transaction {
     private int presentationMode;
     private boolean isFraud=false;
 
-    public Transaction(long user, long time, double amount, double latitude, double longitude, String merchant, int presentationMode) {
-        this.user = user;
+    public Transaction(User user, long time, double amount, double latitude, double longitude, String merchant, int presentationMode, boolean isFraud) {
+        this.user=user;
         this.time = time;
         this.amount = amount;
         this.latitude = latitude;
@@ -24,14 +24,8 @@ public class Transaction {
         this.isFraud = isFraud;
     }
 
-    public void markAsFraud(){
-        this.isFraud=true;
-    }
-    public boolean isFraud(){
-        return isFraud;
-    }
     public String toCSV(){
-        return user+","+
+        return user.toCSV()+","+
                 time+","+
                 amount+","+
                 latitude+","+
@@ -40,6 +34,11 @@ public class Transaction {
                 presentationMode+","+
                 isFraud;
     }
+
+    public static String header(){
+        return "user,time,amount,lat,lon,merchant,presentationMode,isFraud";
+    }
+
 
 }
 
